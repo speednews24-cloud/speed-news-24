@@ -31,7 +31,9 @@ async function upsertRawArticle(raw, fallbackCategory = 'Breaking News') {
   const existing = await Article.findOne({ 'source.url': raw.url });
   if (existing) return existing;
   const category = await Category.findOne({ slug: makeSlug(raw.category || fallbackCategory) }) || await Category.findOne();
-  const body = raw.content || raw.description || raw.title;
+  const seedBody = raw.content || raw.description || raw.title;
+  const fullBody = seedBody.split(/\s+/).length < 90 ? await fetchArticleContent(raw.url).catch(() => '') : '';
+  const body = fullBody || seedBody;
   const ai = await enrichArticleWithAI({ title: raw.title, content: body });
   const article = new Article({
     title: raw.title,
@@ -53,8 +55,72 @@ async function upsertRawArticle(raw, fallbackCategory = 'Breaking News') {
     status: 'published'
   });
   article.readingTime = Math.max(1, Math.ceil(article.content.split(/\s+/).length / 220));
-  article.image = await resolveArticleImage({ ...article.toObject(), image: raw.image ? { url: raw.image, alt: raw.title, provider: 'source' } : undefined });
+  article.image = await resolveArticleImage({ ...article.toObject(), categoryName: category.name, image: raw.image ? { url: raw.image, alt: raw.title, provider: 'source' } : undefined });
   return article.save();
+}
+
+function stripHtml(value = '') {
+  return value
+    .replace(/<script[\s\S]*?<\/script>/gi, ' ')
+    .replace(/<style[\s\S]*?<\/style>/gi, ' ')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&#39;/g, "'")
+    .replace(/&quot;/g, '"')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+export async function fetchArticleContent(url) {
+  const { data } = await axios.get(url, {
+    timeout: 12000,
+    maxRedirects: 5,
+    headers: {
+      'User-Agent': 'Mozilla/5.0 SpeedNews24Bot/1.0',
+      Accept: 'text/html,application/xhtml+xml'
+    }
+  });
+  const paragraphs = [...String(data).matchAll(/<p[^>]*>([\s\S]*?)<\/p>/gi)]
+    .map((match) => stripHtml(match[1]))
+    .filter((text) => text.length > 60 && !/subscribe|advertisement|cookies|also read/i.test(text));
+  const unique = [...new Set(paragraphs)].slice(0, 12);
+  return unique.join('\n\n');
+}
+
+export async function refreshExistingArticles({ limit = 80 } = {}) {
+  const defaultImageUrl = 'images.unsplash.com/photo-1504711434969-e33886168f5c';
+  const articles = await Article.find({
+    status: 'published',
+    $or: [
+      { 'image.url': { $exists: false } },
+      { 'image.url': '' },
+      { 'image.provider': 'default' },
+      { 'image.url': { $regex: defaultImageUrl } },
+      { $expr: { $lt: [{ $size: { $split: ['$content', ' '] } }, 90] } }
+    ]
+  }).populate('category', 'name').sort({ createdAt: -1 }).limit(limit);
+
+  let updated = 0;
+  for (const article of articles) {
+    const words = article.content?.split(/\s+/).length || 0;
+    if (words < 90 && article.source?.url) {
+      const fullContent = await fetchArticleContent(article.source.url).catch(() => '');
+      if (fullContent && fullContent.split(/\s+/).length > words) {
+        article.content = fullContent;
+        article.excerpt = article.excerpt || fullContent.slice(0, 180);
+        article.readingTime = Math.max(1, Math.ceil(fullContent.split(/\s+/).length / 220));
+      }
+    }
+    article.image = await resolveArticleImage({
+      ...article.toObject(),
+      image: undefined,
+      categoryName: article.category?.name
+    });
+    await article.save();
+    updated += 1;
+  }
+  return updated;
 }
 
 export async function fetchNewsAPI() {

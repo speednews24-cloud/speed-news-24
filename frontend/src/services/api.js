@@ -29,6 +29,7 @@ export const authApi = {
 export const adminApi = {
   analytics: () => api.get('/admin/analytics').then((r) => r.data),
   aggregate: () => api.post('/admin/aggregate-news').then((r) => r.data),
+  refreshArticles: () => api.post('/admin/refresh-articles').then((r) => r.data),
   ads: () => api.get('/admin/ads').then((r) => r.data),
   createAd: (payload) => api.post('/admin/ads', payload).then((r) => r.data)
 };

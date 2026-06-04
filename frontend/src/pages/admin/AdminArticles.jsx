@@ -24,6 +24,7 @@ export default function AdminArticles() {
         <textarea className="input min-h-36" name="content" placeholder="Article content" required />
         <select className="input" name="category" required>{categories.map((cat) => <option key={cat._id} value={cat._id}>{cat.name}</option>)}</select>
         <input className="input" name="excerpt" placeholder="Excerpt" />
+        <input className="input" name="imageUrl" placeholder="Image URL, e.g. https://example.com/news.jpg" />
         <input className="input" name="videoUrl" placeholder="YouTube embed URL" />
         <div className="flex gap-4 text-sm font-bold"><label><input name="isBreaking" type="checkbox" /> Breaking</label><label><input name="isFeatured" type="checkbox" /> Featured</label></div>
         <button className="btn-primary w-fit" disabled={create.isPending}>Publish</button>

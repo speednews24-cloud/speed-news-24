@@ -53,8 +53,10 @@ export const createArticle = asyncHandler(async (req, res) => {
   const category = await Category.findById(req.body.category);
   if (!category) throw Object.assign(new Error('Category not found'), { statusCode: 404 });
   const ai = req.body.skipAi ? {} : await enrichArticleWithAI(req.body);
+  const image = req.body.imageUrl ? { url: req.body.imageUrl, alt: req.body.title, provider: 'manual' } : req.body.image;
   const article = new Article({
     ...req.body,
+    image,
     author: req.user._id,
     slug: req.body.slug || `${makeSlug(ai.headline || req.body.title)}-${Date.now().toString(36)}`,
     aiHeadline: ai.headline || req.body.title,
@@ -67,7 +69,7 @@ export const createArticle = asyncHandler(async (req, res) => {
     }
   });
   article.readingTime = Math.max(1, Math.ceil(article.content.split(/\s+/).length / 220));
-  article.image = await resolveArticleImage(article.toObject());
+  article.image = await resolveArticleImage({ ...article.toObject(), categoryName: category.name });
   await article.save();
   res.status(201).json(article);
 });

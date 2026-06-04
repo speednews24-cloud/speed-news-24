@@ -6,6 +6,7 @@ export default function AdminDashboard() {
   const queryClient = useQueryClient();
   const { data } = useQuery({ queryKey: ['admin-analytics'], queryFn: adminApi.analytics });
   const aggregation = useMutation({ mutationFn: adminApi.aggregate, onSuccess: () => queryClient.invalidateQueries({ queryKey: ['admin-analytics'] }) });
+  const refresh = useMutation({ mutationFn: adminApi.refreshArticles, onSuccess: () => queryClient.invalidateQueries({ queryKey: ['admin-analytics'] }) });
   const stats = [
     ['Articles', data?.articles || 0],
     ['Views', data?.views || 0],
@@ -20,6 +21,9 @@ export default function AdminDashboard() {
         <h1 className="text-3xl font-black">Dashboard</h1>
         <button className="btn-primary" onClick={() => aggregation.mutate()} disabled={aggregation.isPending}>
           {aggregation.isPending ? 'Importing...' : 'Run News Aggregation'}
+        </button>
+        <button className="btn-ghost" onClick={() => refresh.mutate()} disabled={refresh.isPending}>
+          {refresh.isPending ? 'Refreshing...' : 'Refresh Images & Content'}
         </button>
       </div>
       <div className="grid gap-4 md:grid-cols-5">

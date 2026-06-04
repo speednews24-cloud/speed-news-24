@@ -5,7 +5,7 @@ import Subscriber from '../models/Subscriber.js';
 import User from '../models/User.js';
 import { env } from '../config/env.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
-import { runNewsAggregation } from '../services/newsService.js';
+import { refreshExistingArticles, runNewsAggregation } from '../services/newsService.js';
 
 export const analytics = asyncHandler(async (_req, res) => {
   const [articles, users, subscribers, comments, viewsAgg] = await Promise.all([
@@ -25,6 +25,11 @@ export const analytics = asyncHandler(async (_req, res) => {
 export const triggerAggregation = asyncHandler(async (_req, res) => {
   const items = await runNewsAggregation();
   res.json({ imported: items.filter(Boolean).length });
+});
+
+export const refreshArticles = asyncHandler(async (_req, res) => {
+  const updated = await refreshExistingArticles({ limit: 120 });
+  res.json({ updated });
 });
 
 export const listAds = asyncHandler(async (_req, res) => res.json(await Advertisement.find().sort({ createdAt: -1 })));
