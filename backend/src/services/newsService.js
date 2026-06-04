@@ -8,13 +8,14 @@ import { enrichArticleWithAI } from './aiService.js';
 import { resolveArticleImage } from './imageService.js';
 
 const rssFeeds = [
-  'https://feeds.bbci.co.uk/news/world/rss.xml',
-  'https://www.thehindu.com/news/national/feeder/default.rss',
-  'https://timesofindia.indiatimes.com/rssfeedstopstories.cms',
-  'https://www.aajtak.in/rssfeeds/?id=home',
-  'https://www.abplive.com/home/feed',
-  'https://zeenews.india.com/hindi/rss/india-national-news.xml',
-  'https://www.ndtv.com/rss/india'
+  { url: 'https://news.google.com/rss?hl=hi&gl=IN&ceid=IN:hi', category: 'Breaking News', language: 'hi' },
+  { url: 'https://www.aajtak.in/rssfeeds/?id=home', category: 'India', language: 'hi' },
+  { url: 'https://zeenews.india.com/hindi/rss/india-national-news.xml', category: 'India', language: 'hi' },
+  { url: 'https://www.abplive.com/home/feed', category: 'India', language: 'hi' },
+  { url: 'https://feeds.bbci.co.uk/news/world/rss.xml', category: 'World', language: 'en' },
+  { url: 'https://www.thehindu.com/news/national/feeder/default.rss', category: 'India', language: 'en' },
+  { url: 'https://timesofindia.indiatimes.com/rssfeedstopstories.cms', category: 'India', language: 'en' },
+  { url: 'https://www.ndtv.com/rss/india', category: 'India', language: 'en' }
 ];
 
 const defaultCategories = ['Breaking News', 'India', 'World', 'Politics', 'Technology', 'Sports', 'Entertainment', 'Education', 'Business'];
@@ -39,10 +40,10 @@ async function upsertRawArticle(raw, fallbackCategory = 'Breaking News') {
     excerpt: raw.description || ai.summary,
     content: body,
     aiSummary: ai.summary,
-    language: /[\u0900-\u097F]/.test(`${raw.title} ${body}`) ? 'hi' : 'en',
+    language: raw.language || (/[\u0900-\u097F]/.test(`${raw.title} ${body}`) ? 'hi' : 'en'),
     category: category._id,
     source: { name: raw.source || 'RSS', url: raw.url, externalId: raw.url },
-    tags: ai.tags || [],
+    tags: ai.tags?.length ? ai.tags : [category.name, raw.language === 'hi' ? 'Hindi News' : 'News'],
     seo: {
       title: ai.seoTitle || raw.title,
       description: ai.seoDescription || raw.description || ai.summary,
@@ -93,20 +94,26 @@ export async function fetchGNews() {
   }, 'Breaking News')));
 }
 
+function getRssImage(item) {
+  return item.image?.url || item.image || item.enclosure?.url || item.media?.thumbnail?.url || item.media?.content?.url || item['media:content']?.url || item['media:thumbnail']?.url;
+}
+
 export async function fetchRSSFeeds() {
   const results = [];
   for (const feed of rssFeeds) {
-    const parsed = await extract(feed).catch(() => null);
+    const parsed = await extract(feed.url).catch(() => null);
     for (const item of parsed?.entries || []) {
       results.push(await upsertRawArticle({
         title: item.title,
         description: item.description,
-        content: item.description,
+        content: item.content || item.description || item.title,
         url: item.link,
-        image: item.image,
+        image: getRssImage(item),
         source: parsed.title,
-        publishedAt: item.published
-      }, 'World'));
+        publishedAt: item.published,
+        language: feed.language,
+        category: feed.category
+      }, feed.category));
     }
   }
   return results;
