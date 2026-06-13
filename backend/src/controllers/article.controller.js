@@ -5,6 +5,7 @@ import { asyncHandler } from '../utils/asyncHandler.js';
 import { makeSlug } from '../utils/slug.js';
 import { enrichArticleWithAI } from '../services/aiService.js';
 import { resolveArticleImage } from '../services/imageService.js';
+import { uploadedImageUrl } from '../middlewares/upload.js';
 
 export const articleRules = [
   body('title').trim().isLength({ min: 4 }),
@@ -53,11 +54,15 @@ export const createArticle = asyncHandler(async (req, res) => {
   const category = await Category.findById(req.body.category);
   if (!category) throw Object.assign(new Error('Category not found'), { statusCode: 404 });
   const ai = req.body.skipAi ? {} : await enrichArticleWithAI(req.body);
-  const image = req.body.imageUrl ? { url: req.body.imageUrl, alt: req.body.title, provider: 'manual' } : req.body.image;
+  const fileImageUrl = uploadedImageUrl(req);
+  const imageUrl = fileImageUrl || req.body.imageUrl;
+  const image = imageUrl ? { url: imageUrl, alt: req.body.title, provider: fileImageUrl ? 'upload' : 'manual' } : req.body.image;
   const article = new Article({
     ...req.body,
     image,
     author: req.user._id,
+    isBreaking: req.body.isBreaking === true || req.body.isBreaking === 'true' || req.body.isBreaking === 'on',
+    isFeatured: req.body.isFeatured === true || req.body.isFeatured === 'true' || req.body.isFeatured === 'on',
     slug: req.body.slug || `${makeSlug(ai.headline || req.body.title)}-${Date.now().toString(36)}`,
     aiHeadline: ai.headline || req.body.title,
     aiSummary: ai.summary || req.body.aiSummary,

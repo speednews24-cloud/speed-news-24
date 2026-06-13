@@ -14,9 +14,12 @@ export default function Footer() {
           <Link to="/category/world">World</Link>
         </div>
         <div className="grid gap-2">
+          <Link to="/about">About Us</Link>
+          <Link to="/contact">Contact Us</Link>
+          <Link to="/privacy-policy">Privacy Policy</Link>
+          <Link to="/terms">Terms</Link>
+          <Link to="/disclaimer">Disclaimer</Link>
           <Link to="/admin">Admin</Link>
-          <a href="/api/seo/sitemap.xml">Sitemap</a>
-          <a href="/api/seo/robots.txt">Robots</a>
         </div>
       </div>
     </footer>

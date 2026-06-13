@@ -9,9 +9,10 @@ export default function AdminArticles() {
 
   function submit(event) {
     event.preventDefault();
-    const payload = Object.fromEntries(new FormData(event.currentTarget));
-    payload.isBreaking = Boolean(payload.isBreaking);
-    payload.isFeatured = Boolean(payload.isFeatured);
+    const payload = new FormData(event.currentTarget);
+    payload.set('isBreaking', event.currentTarget.isBreaking.checked ? 'true' : 'false');
+    payload.set('isFeatured', event.currentTarget.isFeatured.checked ? 'true' : 'false');
+    if (!event.currentTarget.imageFile.files.length) payload.delete('imageFile');
     create.mutate(payload);
     event.currentTarget.reset();
   }
@@ -25,6 +26,10 @@ export default function AdminArticles() {
         <select className="input" name="category" required>{categories.map((cat) => <option key={cat._id} value={cat._id}>{cat.name}</option>)}</select>
         <input className="input" name="excerpt" placeholder="Excerpt" />
         <input className="input" name="imageUrl" placeholder="Image URL, e.g. https://example.com/news.jpg" />
+        <label className="grid gap-2 text-sm font-bold">
+          Upload Photo
+          <input className="input" name="imageFile" type="file" accept="image/*" />
+        </label>
         <input className="input" name="videoUrl" placeholder="YouTube embed URL" />
         <div className="flex gap-4 text-sm font-bold"><label><input name="isBreaking" type="checkbox" /> Breaking</label><label><input name="isFeatured" type="checkbox" /> Featured</label></div>
         <button className="btn-primary w-fit" disabled={create.isPending}>Publish</button>

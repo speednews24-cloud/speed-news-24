@@ -13,6 +13,8 @@ import AdminDashboard from './pages/admin/AdminDashboard.jsx';
 import AdminArticles from './pages/admin/AdminArticles.jsx';
 import AdminCategories from './pages/admin/AdminCategories.jsx';
 import AdminAds from './pages/admin/AdminAds.jsx';
+import StaticPage from './pages/StaticPage.jsx';
+import AdSenseScript from './components/AdSenseScript.jsx';
 
 export default function App() {
   return (
@@ -20,6 +22,7 @@ export default function App() {
       <LanguageProvider>
         <AuthProvider>
           <BrowserRouter>
+            <AdSenseScript />
             <Routes>
               <Route element={<MainLayout />}>
                 <Route path="/" element={<Home />} />
@@ -28,6 +31,11 @@ export default function App() {
                 <Route path="/article/:slug" element={<ArticlePage />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
+                <Route path="/about" element={<StaticPage type="about" />} />
+                <Route path="/contact" element={<StaticPage type="contact" />} />
+                <Route path="/privacy-policy" element={<StaticPage type="privacy-policy" />} />
+                <Route path="/terms" element={<StaticPage type="terms" />} />
+                <Route path="/disclaimer" element={<StaticPage type="disclaimer" />} />
               </Route>
               <Route path="/admin" element={<AdminLayout />}>
                 <Route index element={<AdminDashboard />} />
