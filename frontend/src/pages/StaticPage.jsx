@@ -14,9 +14,9 @@ const pages = {
     title: 'Contact Us',
     description: 'Contact Speed News 24 for editorial queries, corrections, advertisements, sponsorships, and general support.',
     sections: [
-      ['Editorial Contact', 'For news corrections, story suggestions, or content-related queries, email us at editor@speednews24.com.'],
-      ['Advertising', 'For sponsorships, display ads, and brand partnerships, email ads@speednews24.com.'],
-      ['General Support', 'For technical or account-related support, email support@speednews24.com.']
+      ['Editorial Contact', 'For news corrections, story suggestions, or content-related queries, email us at jobwitharun050201@gmail.com.'],
+      ['Advertising', 'For sponsorships, display ads, and brand partnerships, email jobwitharun050201@gmail.com.'],
+      ['General Support', 'For technical or account-related support, email jobwitharun050201@gmail.com.']
     ]
   },
   'privacy-policy': {
