@@ -13,8 +13,19 @@ export default function Home() {
   const { language, t } = useLanguage();
   const { data: latest } = useQuery({ queryKey: ['articles', language], queryFn: () => articleApi.list({ language, limit: 12 }) });
   const { data: breaking } = useQuery({ queryKey: ['breaking', language], queryFn: () => articleApi.list({ language, breaking: true, limit: 6 }) });
+  const { data: fallbackLatest } = useQuery({
+    queryKey: ['articles-fallback', language],
+    enabled: language === 'hi' && latest?.items?.length === 0,
+    queryFn: () => articleApi.list({ limit: 12 })
+  });
+  const { data: fallbackBreaking } = useQuery({
+    queryKey: ['breaking-fallback', language],
+    enabled: language === 'hi' && breaking?.items?.length === 0,
+    queryFn: () => articleApi.list({ breaking: true, limit: 6 })
+  });
   const { data: categories = [] } = useQuery({ queryKey: ['categories'], queryFn: categoryApi.list });
-  const articles = latest?.items || [];
+  const articles = latest?.items?.length ? latest.items : fallbackLatest?.items || [];
+  const tickerArticles = breaking?.items?.length ? breaking.items : fallbackBreaking?.items || articles.slice(0, 6);
   const hero = articles[0];
 
   return (
@@ -25,7 +36,7 @@ export default function Home() {
         <meta property="og:title" content="Speed News 24" />
         <script type="application/ld+json">{JSON.stringify({ '@context': 'https://schema.org', '@type': 'NewsMediaOrganization', name: 'Speed News 24' })}</script>
       </Helmet>
-      <NewsTicker articles={breaking?.items || articles.slice(0, 6)} />
+      <NewsTicker articles={tickerArticles} />
       <section className="bg-white py-6 dark:bg-zinc-950">
         <div className="container-page grid gap-6 lg:grid-cols-[1fr_320px]">
           {hero && (
@@ -47,7 +58,7 @@ export default function Home() {
       <section className="container-page py-8">
         <div className="mb-4 flex items-end justify-between">
           <h2 className="text-2xl font-black">{t.latest}</h2>
-          <span className="text-sm font-bold text-brand-red">AI Summary Ready</span>
+          <span className="text-sm font-bold text-brand-red">{language === 'hi' ? 'Hindi + Latest' : 'AI Summary Ready'}</span>
         </div>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {articles.slice(1).map((article, index) => (
